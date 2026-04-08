@@ -3,26 +3,24 @@ const status = document.getElementById("status");
 const output = document.getElementById("output");
 
 btn.addEventListener("click", async () => {
-  const fileInput = document.getElementById("videoFile");
+  const transcript = document.getElementById("transcript").value.trim();
   const topic = document.getElementById("topic").value;
 
-  if (!fileInput.files.length) {
-    alert("Video seçilməyib");
+  if (!transcript || transcript.length < 20) {
+    alert("Zəhmət olmasa kifayət qədər uzun mətn və ya transkript daxil et.");
     return;
   }
 
-  const file = fileInput.files[0];
-  const formData = new FormData();
-  formData.append("video", file);
-  formData.append("topic", topic);
-
-  status.textContent = "Yüklənir...";
+  status.textContent = "AI analiz edir...";
   output.value = "";
 
   try {
-    const res = await fetch("/upload", {
+    const res = await fetch("/api/analyze", {
       method: "POST",
-      body: formData
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ transcript, topic })
     });
 
     const data = await res.json();
@@ -32,11 +30,11 @@ btn.addEventListener("click", async () => {
       output.value = data.result;
     } else {
       status.textContent = "Xəta ❌";
-      output.value = JSON.stringify(data);
+      output.value = data.error || JSON.stringify(data);
     }
-
   } catch (err) {
     status.textContent = "Server xətası ❌";
+    output.value = "Serverə qoşulmaq mümkün olmadı.";
     console.error(err);
   }
 });
