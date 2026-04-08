@@ -1,10 +1,12 @@
 const btn = document.getElementById("analyzeBtn");
 const status = document.getElementById("status");
 const output = document.getElementById("output");
+const transcriptEl = document.getElementById("transcript");
+const topicEl = document.getElementById("topic");
 
 btn.addEventListener("click", async () => {
-  const transcript = document.getElementById("transcript").value.trim();
-  const topic = document.getElementById("topic").value;
+  const transcript = transcriptEl.value.trim();
+  const topic = topicEl.value;
 
   if (!transcript || transcript.length < 20) {
     alert("Zəhmət olmasa kifayət qədər uzun mətn və ya transkript daxil et.");
