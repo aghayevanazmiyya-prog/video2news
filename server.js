@@ -37,7 +37,7 @@ app.post("/api/analyze", async (req, res) => {
 
     const prompt = `
 Sən peşəkar newsroom AI assistentsən.
-Aşağıdakı video transkriptini analiz et və nəticəni AZƏRBAYCAN dilində qaytar.
+Aşağıdakı transkripti analiz et və nəticəni Azərbaycan dilində qaytar.
 
 Mövzu: ${topic}
 
@@ -72,7 +72,6 @@ Aşağıdakı formatda cavab ver:
     });
 
     const result = response.choices[0]?.message?.content || "Nəticə alınmadı.";
-
     res.json({ result });
   } catch (error) {
     console.error("API ERROR:", error);
