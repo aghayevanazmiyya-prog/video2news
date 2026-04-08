@@ -21,58 +21,85 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleaned);
+  }
+}
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "video2news-v2" });
 });
 
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { transcript, topic = "general" } = req.body;
+    const { transcript, topic = "general", tone = "standard" } = req.body;
 
-    if (!transcript || transcript.trim().length < 20) {
+    if (!transcript || transcript.trim().length < 30) {
       return res.status(400).json({
-        error: "Transcript çox qısadır və ya boşdur."
+        error: "Transkript çox qısadır və ya boşdur."
       });
     }
 
     const prompt = `
-Sən peşəkar newsroom AI assistentsən.
-Aşağıdakı transkripti analiz et və nəticəni Azərbaycan dilində qaytar.
+Sən peşəkar Azərbaycan dilli TV və media newsroom AI assistentsən.
 
-Mövzu: ${topic}
+Mövzu tipi: ${topic}
+Ton: ${tone}
+
+Aşağıdakı transkript əsasında yalnız etibarlı JSON qaytar.
 
 Transkript:
+"""
 ${transcript}
+"""
 
-Aşağıdakı formatda cavab ver:
+Yalnız bu JSON formatında cavab ver:
+{
+  "headlines": ["5 başlıq"],
+  "shortNews": "Qısa xəbər mətni",
+  "studioText": "TV aparıcı/studio mətni",
+  "telegramPost": "Telegram üçün uyğun post",
+  "youtubeTitle": "YouTube başlığı",
+  "youtubeDescription": "YouTube təsviri",
+  "thumbnailText": "Thumbnail üzərində istifadə üçün qısa mətn",
+  "factCheck": "Yoxlanmalı məqamlar",
+  "analysis": "Analitik qeyd və kontekst"
+}
 
-1. Başlıq variantları (5 ədəd)
-2. Qısa xəbər mətni
-3. SEO başlıq
-4. Thumbnail mətni
-5. Telegram post
-6. YouTube description
-7. Fact-check qeydləri
-8. Breaking xəbər versiyası
+Qaydalar:
+- Hər şey Azərbaycan dilində olsun
+- Başlıqlar bir-birindən fərqli olsun
+- Qısa xəbər informativ olsun
+- Studio text aparıcı dilinə yaxın olsun
+- Thumbnail text çox qısa olsun
+- JSON-dan başqa heç nə yazma
 `;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: "Sən peşəkar TV və media redaksiya AI assistentsən."
+          content:
+            "Sən peşəkar Azərbaycan dilli newsroom assistentsən. Yalnız düzgün JSON qaytar."
         },
         {
           role: "user",
           content: prompt
         }
       ],
-      temperature: 0.7,
+      temperature: 0.7
     });
 
-    const result = response.choices[0]?.message?.content || "Nəticə alınmadı.";
-    res.json({ result });
+    const raw = response.choices?.[0]?.message?.content || "{}";
+    const parsed = safeJsonParse(raw);
+
+    res.json(parsed);
   } catch (error) {
     console.error("API ERROR:", error);
     res.status(500).json({
@@ -81,7 +108,7 @@ Aşağıdakı formatda cavab ver:
   }
 });
 
-app.get("*", (req, res) => {
+app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
