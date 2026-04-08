@@ -21,12 +21,15 @@ const ids = [
   "youtubeDescription",
   "thumbnailText",
   "factCheck",
-  "analysis"
+  "analysis",
+  "riskBlock",
+  "knownUnknowns"
 ];
 
 function resetOutputs() {
   ids.forEach((id) => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.textContent = "Hələ nəticə yoxdur.";
     el.classList.add("empty");
   });
@@ -34,12 +37,15 @@ function resetOutputs() {
 
 function setOutput(id, text) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = text || "Nəticə yoxdur.";
   el.classList.remove("empty");
 }
 
 function setHeadlines(items) {
   const el = document.getElementById("headlines");
+  if (!el) return;
+
   if (!Array.isArray(items) || !items.length) {
     el.textContent = "Nəticə yoxdur.";
     el.classList.remove("empty");
@@ -54,7 +60,7 @@ function setHeadlines(items) {
 
 function getPlainText(id) {
   const el = document.getElementById(id);
-  return (el.innerText || "").trim();
+  return el ? (el.innerText || "").trim() : "";
 }
 
 function collectAllOutput() {
@@ -82,6 +88,12 @@ function collectAllOutput() {
     "",
     "=== FACT-CHECK QEYDLƏRİ ===",
     getPlainText("factCheck"),
+    "",
+    "=== RİSK / NƏTİCƏ ===",
+    getPlainText("riskBlock"),
+    "",
+    "=== MƏLUM OLANLAR / QEYRİ-MÜƏYYƏNLİK ===",
+    getPlainText("knownUnknowns"),
     "",
     "=== ANALİTİK QEYD ===",
     getPlainText("analysis")
@@ -116,6 +128,8 @@ function saveHistory() {
     thumbnailText: getPlainText("thumbnailText"),
     factCheck: getPlainText("factCheck"),
     analysis: getPlainText("analysis"),
+    riskBlock: getPlainText("riskBlock"),
+    knownUnknowns: getPlainText("knownUnknowns"),
     headlines: getPlainText("headlines"),
     createdAt: new Date().toLocaleString("az-AZ")
   };
@@ -156,6 +170,8 @@ function renderHistory() {
       setOutput("thumbnailText", selected.thumbnailText);
       setOutput("factCheck", selected.factCheck);
       setOutput("analysis", selected.analysis);
+      setOutput("riskBlock", selected.riskBlock);
+      setOutput("knownUnknowns", selected.knownUnknowns);
 
       const headlinesEl = document.getElementById("headlines");
       headlinesEl.textContent = selected.headlines;
@@ -205,6 +221,8 @@ btn.addEventListener("click", async () => {
     setOutput("thumbnailText", data.thumbnailText);
     setOutput("factCheck", data.factCheck);
     setOutput("analysis", data.analysis);
+    setOutput("riskBlock", data.riskBlock);
+    setOutput("knownUnknowns", data.knownUnknowns);
 
     statusEl.textContent = "Hazırdır ✅";
     saveHistory();
