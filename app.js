@@ -12,6 +12,10 @@ const exportYoutubeBtn = document.getElementById("exportYoutubeBtn");
 const copySummaryBtn = document.getElementById("copySummaryBtn");
 const historyList = document.getElementById("historyList");
 
+const mediaFileEl = document.getElementById("mediaFile");
+const transcribeBtn = document.getElementById("transcribeBtn");
+const clearFileBtn = document.getElementById("clearFileBtn");
+
 const ids = [
   "headlines",
   "shortNews",
@@ -182,6 +186,72 @@ function renderHistory() {
   });
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result || "";
+      const base64 = String(result).split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+transcribeBtn?.addEventListener("click", async () => {
+  const file = mediaFileEl?.files?.[0];
+
+  if (!file) {
+    alert("Əvvəl audio və ya video faylı seç.");
+    return;
+  }
+
+  const maxMb = 4;
+  if (file.size > maxMb * 1024 * 1024) {
+    alert("Bu MVP versiyada fayl çox böyükdür. Zəhmət olmasa 4 MB-dan kiçik qısa fayl seç.");
+    return;
+  }
+
+  statusEl.textContent = "Transkript hazırlanır...";
+
+  try {
+    const base64Data = await fileToBase64(file);
+
+    const res = await fetch("/api/transcribe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type,
+        base64Data
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      statusEl.textContent = "Transkript xətası ❌";
+      alert(data.error || "Transkript alınmadı.");
+      return;
+    }
+
+    transcriptEl.value = data.text || "";
+    statusEl.textContent = "Transkript hazırdır ✅";
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Transkript xətası ❌";
+    alert("Transkripsiya zamanı problem baş verdi.");
+  }
+});
+
+clearFileBtn?.addEventListener("click", () => {
+  if (mediaFileEl) mediaFileEl.value = "";
+  statusEl.textContent = "Fayl sıfırlandı.";
+});
+
 btn.addEventListener("click", async () => {
   const transcript = transcriptEl.value.trim();
   const topic = topicEl.value;
@@ -238,7 +308,10 @@ document.querySelectorAll(".tool-btn").forEach((btn) => {
     const targetId = btn.dataset.copy;
     if (!targetId) return;
 
-    const text = document.getElementById(targetId).innerText.trim();
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    const text = target.innerText.trim();
     if (!text || text === "Hələ nəticə yoxdur.") return;
 
     try {
