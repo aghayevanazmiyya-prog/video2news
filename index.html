@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Video2News — V4</title>
+  <title>Video2News — V5</title>
   <style>
     * { box-sizing: border-box; }
 
@@ -414,6 +414,7 @@
             <option value="formal">Daha rəsmi</option>
             <option value="sharp">Daha sərt analitik</option>
             <option value="tv">TV aparıcı dili</option>
+            <option value="warlab">War Lab mode</option>
           </select>
 
           <button class="btn btn-primary" id="analyzeBtn">Paket yarat</button>
@@ -430,7 +431,7 @@
             </div>
             <div class="meta-box">
               <span class="k">Format</span>
-              <span class="v">Newsroom Pack V4</span>
+              <span class="v">Newsroom Pack V5</span>
             </div>
           </div>
 
@@ -525,6 +526,26 @@
               <div class="card-content empty" id="factCheck">Hələ nəticə yoxdur.</div>
             </div>
 
+            <div class="card">
+              <div class="card-head">
+                <h3>Risk / nəticə</h3>
+                <div class="card-tools">
+                  <button class="tool-btn" data-copy="riskBlock">Copy</button>
+                </div>
+              </div>
+              <div class="card-content empty" id="riskBlock">Hələ nəticə yoxdur.</div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h3>Məlum olanlar / qeyri-müəyyənlik</h3>
+                <div class="card-tools">
+                  <button class="tool-btn" data-copy="knownUnknowns">Copy</button>
+                </div>
+              </div>
+              <div class="card-content empty" id="knownUnknowns">Hələ nəticə yoxdur.</div>
+            </div>
+
             <div class="card full">
               <div class="card-head">
                 <h3>Analitik qeyd</h3>
@@ -567,7 +588,7 @@
           <div class="side-head">Qeyd</div>
           <div class="side-body">
             <div class="empty-note">
-              Növbəti mərhələdə video/audio upload, speech-to-text və War Lab analitik rejimi əlavə ediləcək.
+              Növbəti mərhələdə video/audio upload, speech-to-text və War Lab analitik rejimi daha da gücləndiriləcək.
             </div>
           </div>
         </div>
