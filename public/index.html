@@ -1,14 +1,109 @@
-<label>Transkript / mətn</label>
-<textarea id="transcript" placeholder="Buraya video transkriptini və ya mətni yapışdır..."></textarea>
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video2News</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0f17;
+      color: #fff;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      color: #ff4d4f;
+    }
+    p {
+      color: #c9d1d9;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    select, button, textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #0f172a;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    textarea {
+      min-height: 280px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    button {
+      background: #ff4d4f;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .status {
+      color: #c9d1d9;
+      margin-top: 8px;
+    }
+    @media (max-width: 800px) {
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Video2News</h1>
+    <p>Transkripti daxil et, AI onu xəbər paketinə çevirsin.</p>
 
-<label>Format seç</label>
-<select id="topic">
-  <option value="general">Ümumi xəbər</option>
-  <option value="military">Hərbi / Təhlükəsizlik</option>
-  <option value="politics">Siyasət</option>
-  <option value="economy">İqtisadiyyat</option>
-  <option value="tech">Texnologiya</option>
-</select>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="transcript">Transkript / mətn</label>
+          <textarea id="transcript" placeholder="Buraya mətni və ya transkripti yapışdır..."></textarea>
 
-<button id="analyzeBtn">Emal et</button>
-<div class="status" id="status">Hazırdır.</div>
+          <label for="topic">Format seç</label>
+          <select id="topic">
+            <option value="general">Ümumi xəbər</option>
+            <option value="military">Hərbi / Təhlükəsizlik</option>
+            <option value="politics">Siyasət</option>
+            <option value="economy">İqtisadiyyat</option>
+            <option value="tech">Texnologiya</option>
+          </select>
+
+          <button id="analyzeBtn">Emal et</button>
+          <div class="status" id="status">Hazırdır.</div>
+        </div>
+
+        <div>
+          <label for="output">Nəticə</label>
+          <textarea id="output" placeholder="AI nəticəsi burada görünəcək..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
