@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <title>Video2News</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0b1220;
+      color: white;
+      padding: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #111827;
+      color: white;
+      border: 1px solid #333;
+    }
+
+    button {
+      padding: 12px;
+      background: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+    }
+
+    .box {
+      background: #111827;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Video2News</h1>
+<p>Transkripti daxil et → AI xəbər paketinə çevirir</p>
+
+<textarea id="transcript" placeholder="Mətn daxil et..."></textarea>
+
+<button id="analyzeBtn">Paket yarat</button>
+
+<div class="box">
+  <h3>Qısa xəbər</h3>
+  <div id="shortNews">Nəticə yoxdur</div>
+</div>
+
+<div class="box">
+  <h3>Telegram post</h3>
+  <div id="telegramPost">Nəticə yoxdur</div>
+</div>
+
+<div class="box">
+  <h3>YouTube başlıq</h3>
+  <div id="youtubeTitle">Nəticə yoxdur</div>
+</div>
+
+<div class="box">
+  <h3>Analiz</h3>
+  <div id="analysis">Nəticə yoxdur</div>
+</div>
+
+<script src="./app.js"></script>
+
+</body>
+</html>
