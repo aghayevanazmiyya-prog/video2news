@@ -1,16 +1,25 @@
 {
   "name": "video2news",
   "version": "1.0.0",
-  "description": "AI-powered newsroom tool",
-  "type": "module",
-  "main": "server.js",
+  "description": "Video2News newsroom tool",
+  "main": "index.js",
   "scripts": {
     "start": "node server.js"
   },
+  "keywords": [
+    "newsroom",
+    "video",
+    "transcript",
+    "ai",
+    "cloudinary",
+    "vercel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "openai": "^4.56.0"
+    "cloudinary": "^2.5.1",
+    "formidable": "^3.5.1",
+    "openai": "^4.86.1"
   }
 }
