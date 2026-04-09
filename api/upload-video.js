@@ -22,12 +22,13 @@ export default async function handler(req, res) {
   const form = formidable({
     multiples: false,
     keepExtensions: true,
-    maxFileSize: 1024 * 1024 * 1024, // 1GB
+    maxFileSize: 1024 * 1024 * 1024, // 1 GB
   });
 
   form.parse(req, async (err, fields, files) => {
     try {
       if (err) {
+        console.error("FORM PARSE ERROR:", err);
         return res.status(500).json({ error: "Form parse xətası" });
       }
 
