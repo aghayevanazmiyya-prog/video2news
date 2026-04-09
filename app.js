@@ -1,677 +1,493 @@
-<!DOCTYPE html>
-<html lang="az">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Video2News</title>
-  <style>
-    :root {
-      --bg: #07111f;
-      --bg-2: #0a1730;
-      --panel: rgba(12, 25, 49, 0.92);
-      --panel-2: rgba(15, 31, 60, 0.95);
-      --border: rgba(120, 156, 255, 0.16);
-      --text: #f4f7ff;
-      --muted: #9fb0d1;
-      --accent: #ff4d57;
-      --accent-2: #ff6a74;
-      --success: #22c55e;
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-      --radius: 20px;
-      --radius-sm: 14px;
-    }
+const btn = document.getElementById("analyzeBtn");
+const statusEl = document.getElementById("status");
+const transcriptEl = document.getElementById("transcript");
+const topicEl = document.getElementById("topic");
+const toneEl = document.getElementById("tone");
+const clearBtn = document.getElementById("clearBtn");
+const copyAllBtn = document.getElementById("copyAllBtn");
+const exportTxtBtn = document.getElementById("exportTxtBtn");
+const exportHeadlinesBtn = document.getElementById("exportHeadlinesBtn");
+const exportTelegramBtn = document.getElementById("exportTelegramBtn");
+const exportYoutubeBtn = document.getElementById("exportYoutubeBtn");
+const copySummaryBtn = document.getElementById("copySummaryBtn");
+const historyList = document.getElementById("historyList");
 
-    * {
-      box-sizing: border-box;
-    }
+const mediaFileEl = document.getElementById("mediaFile");
+const uploadBtn = document.getElementById("uploadBtn");
+const clearFileBtn = document.getElementById("clearFileBtn");
 
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(255, 77, 87, 0.18), transparent 22%),
-        radial-gradient(circle at top right, rgba(0, 112, 255, 0.16), transparent 26%),
-        linear-gradient(120deg, var(--bg), var(--bg-2));
-      min-height: 100vh;
-      padding: 24px;
-    }
+const uploadStatusEl = document.getElementById("uploadStatus");
+const uploadProgressFill = document.getElementById("uploadProgressFill");
+const uploadProgressText = document.getElementById("uploadProgressText");
+const jobIdBox = document.getElementById("jobIdBox");
+const jobStageBox = document.getElementById("jobStageBox");
+const assetUrlBox = document.getElementById("assetUrlBox");
+const publicIdBox = document.getElementById("publicIdBox");
 
-    .app {
-      max-width: 1320px;
-      margin: 0 auto;
-    }
+const ids = [
+  "headlines",
+  "shortNews",
+  "studioText",
+  "telegramPost",
+  "youtubeTitle",
+  "youtubeDescription",
+  "thumbnailText",
+  "factCheck",
+  "riskBlock",
+  "knownUnknowns",
+  "analysis"
+];
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-      margin-bottom: 24px;
-    }
+function setStatus(text) {
+  if (statusEl) statusEl.textContent = text;
+}
 
-    .brand h1 {
-      margin: 0;
-      font-size: 40px;
-      line-height: 1;
-      font-weight: 800;
-      color: var(--accent);
-      letter-spacing: -0.02em;
-    }
+function setUploadStatus(text) {
+  if (uploadStatusEl) uploadStatusEl.textContent = text;
+}
 
-    .brand p {
-      margin: 12px 0 0;
-      max-width: 760px;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.55;
-    }
+function setProgress(percent) {
+  const safe = Math.max(0, Math.min(100, Number(percent) || 0));
+  if (uploadProgressFill) uploadProgressFill.style.width = `${safe}%`;
+  if (uploadProgressText) uploadProgressText.textContent = `${safe.toFixed(0)}%`;
+}
 
-    .status-wrap {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
+function setJobInfo({ jobId = "—", stage = "idle", assetUrl = "—", publicId = "—" } = {}) {
+  if (jobIdBox) jobIdBox.textContent = jobId;
+  if (jobStageBox) jobStageBox.textContent = stage;
+  if (assetUrlBox) assetUrlBox.textContent = assetUrl;
+  if (publicIdBox) publicIdBox.textContent = publicId;
+}
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border-radius: 999px;
-      background: rgba(12, 25, 49, 0.78);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 14px;
-      white-space: nowrap;
-      box-shadow: var(--shadow);
-    }
+function resetOutputs() {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = "Hələ nəticə yoxdur.";
+    el.classList.add("empty");
+  });
+}
 
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: var(--success);
-      box-shadow: 0 0 14px rgba(34, 197, 94, 0.6);
-    }
+function setOutput(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text || "Nəticə yoxdur.";
+  el.classList.remove("empty");
+}
 
-    .layout {
-      display: grid;
-      grid-template-columns: 360px 1fr 260px;
-      gap: 18px;
-      align-items: start;
-    }
+function setHeadlines(items) {
+  const el = document.getElementById("headlines");
+  if (!el) return;
 
-    .panel {
-      background: linear-gradient(180deg, rgba(10, 23, 48, 0.98), rgba(8, 17, 33, 0.98));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+  if (!Array.isArray(items) || !items.length) {
+    el.textContent = "Nəticə yoxdur.";
+    el.classList.remove("empty");
+    return;
+  }
 
-    .panel-head {
-      padding: 18px 18px 10px;
-      border-bottom: 1px solid rgba(120, 156, 255, 0.08);
-    }
-
-    .panel-title {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .panel-sub {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .panel-body {
-      padding: 18px;
-    }
-
-    .dropzone {
-      border: 1px dashed rgba(159, 176, 209, 0.28);
-      border-radius: 16px;
-      padding: 16px;
-      background: rgba(12, 25, 49, 0.58);
-      margin-bottom: 14px;
-    }
-
-    .dropzone strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-
-    .dropzone span {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    textarea,
-    select,
-    input[type="file"] {
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid #334155;
-      background: var(--panel-2);
-      color: var(--text);
-      padding: 13px 14px;
-      font-size: 14px;
-      outline: none;
-      transition: 0.2s ease;
-      margin-bottom: 14px;
-    }
-
-    textarea:focus,
-    select:focus,
-    input[type="file"]:focus {
-      border-color: rgba(255, 106, 116, 0.55);
-      box-shadow: 0 0 0 4px rgba(255, 77, 87, 0.12);
-    }
-
-    textarea {
-      min-height: 190px;
-      resize: vertical;
-      line-height: 1.6;
-    }
-
-    .btn {
-      width: 100%;
-      border: none;
-      border-radius: 14px;
-      padding: 14px 18px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.12s ease, opacity 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #fff;
-      box-shadow: 0 12px 24px rgba(255, 77, 87, 0.22);
-    }
-
-    .btn-secondary {
-      background: rgba(13, 26, 50, 0.96);
-      color: var(--text);
-      border: 1px solid rgba(159, 176, 209, 0.18);
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-      margin-bottom: 14px;
-    }
-
-    .btn-row .btn {
-      flex: 1;
-    }
-
-    .mini-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .mini-card {
-      padding: 12px;
-      border-radius: 14px;
-      background: rgba(13, 26, 50, 0.96);
-      border: 1px solid rgba(159, 176, 209, 0.08);
-    }
-
-    .mini-card .label {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .mini-card .value {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .panel-note {
-      margin-top: 14px;
-      font-size: 12px;
-      line-height: 1.55;
-      color: var(--muted);
-    }
-
-    .output-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .output-card {
-      border: 1px solid rgba(159, 176, 209, 0.1);
-      background: rgba(13, 26, 50, 0.96);
-      border-radius: 18px;
-      min-height: 200px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .output-card.tall {
-      min-height: 240px;
-    }
-
-    .output-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(159, 176, 209, 0.08);
-      gap: 10px;
-    }
-
-    .output-title {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .tool-btn {
-      border: 1px solid rgba(159, 176, 209, 0.18);
-      background: rgba(8, 17, 33, 0.9);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 8px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .output-content {
-      padding: 16px;
-      color: var(--text);
-      font-size: 14px;
-      line-height: 1.72;
-      white-space: pre-wrap;
-      flex: 1;
-      overflow: auto;
-    }
-
-    .empty {
-      color: #7183a8;
-    }
-
-    .headlines-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .headline-item {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(7, 17, 31, 0.72);
-      border: 1px solid rgba(159, 176, 209, 0.08);
-      line-height: 1.55;
-    }
-
-    .side-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .side-card {
-      background: linear-gradient(180deg, rgba(10, 23, 48, 0.98), rgba(8, 17, 33, 0.98));
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .side-card h3 {
-      margin: 0;
-      padding: 16px 16px 12px;
-      font-size: 15px;
-      border-bottom: 1px solid rgba(159, 176, 209, 0.08);
-    }
-
-    .side-body {
-      padding: 14px 16px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .history-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(13, 26, 50, 0.9);
-      border: 1px solid rgba(159, 176, 209, 0.08);
-      cursor: pointer;
-      margin-bottom: 10px;
-      transition: 0.2s ease;
-    }
-
-    .history-item:hover {
-      border-color: rgba(255, 106, 116, 0.35);
-      transform: translateY(-1px);
-    }
-
-    .history-item strong {
-      color: var(--text);
-      font-size: 13px;
-    }
-
-    .history-item span {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .export-buttons {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-
-    .empty-note {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    @media (max-width: 1200px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .output-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .topbar {
-        flex-direction: column;
-      }
-
-      .status-wrap {
-        justify-content: flex-start;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <div class="topbar">
-      <div class="brand">
-        <h1>Video2News</h1>
-        <p>
-          Transkripti daxil et, AI onu strukturlaşdırılmış newsroom paketinə çevirsin.
-          Başlıqlar, qısa xəbər, studio text, Telegram, YouTube və analitik blok bir paneldə.
-        </p>
-      </div>
-
-      <div class="status-wrap">
-        <div class="status-pill">
-          <span class="status-dot"></span>
-          <span id="status">AI online</span>
-        </div>
-        <div class="status-pill">Model: gpt-4o-mini</div>
-      </div>
+  el.innerHTML = `
+    <div class="headlines-list">
+      ${items.map((item) => `<div class="headline-item">${item}</div>`).join("")}
     </div>
+  `;
+  el.classList.remove("empty");
+}
 
-    <div class="layout">
-      <!-- LEFT -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">Input paneli</h2>
-          <div class="panel-sub">
-            Mətn və ya transkript daxil et. Qısa audio/video faylı da yükləyib transkript çıxara bilərsən.
-          </div>
-        </div>
+function getPlainText(id) {
+  const el = document.getElementById(id);
+  return el ? (el.innerText || "").trim() : "";
+}
 
-        <div class="panel-body">
-          <div class="dropzone">
-            <strong>Drag & drop zona</strong>
-            <span>
-              Qısa audio/video və ya mətn faylı burada istifadə oluna bilər.
-              Bu mərhələdə qısa media upload + transkript dəstəyi aktivdir.
-            </span>
-          </div>
+function collectAllOutput() {
+  return [
+    "=== BAŞLIQ VARİANTLARI ===",
+    getPlainText("headlines"),
+    "",
+    "=== QISA XƏBƏR ===",
+    getPlainText("shortNews"),
+    "",
+    "=== TV STUDIO TEXT ===",
+    getPlainText("studioText"),
+    "",
+    "=== TELEGRAM POST ===",
+    getPlainText("telegramPost"),
+    "",
+    "=== YOUTUBE BAŞLIQ ===",
+    getPlainText("youtubeTitle"),
+    "",
+    "=== YOUTUBE TƏSVİR ===",
+    getPlainText("youtubeDescription"),
+    "",
+    "=== THUMBNAIL TEXT ===",
+    getPlainText("thumbnailText"),
+    "",
+    "=== FACT-CHECK QEYDLƏRİ ===",
+    getPlainText("factCheck"),
+    "",
+    "=== RİSK / NƏTİCƏ ===",
+    getPlainText("riskBlock"),
+    "",
+    "=== MƏLUM OLANLAR / QEYRİ-MÜƏYYƏNLİK ===",
+    getPlainText("knownUnknowns"),
+    "",
+    "=== ANALİTİK QEYD ===",
+    getPlainText("analysis")
+  ].join("\n");
+}
 
-          <label for="mediaFile">Audio / video faylı</label>
-          <input
-            id="mediaFile"
-            type="file"
-            accept="audio/*,video/mp4,video/webm,video/quicktime"
-          />
+function downloadText(filename, content) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-          <div class="btn-row" style="margin-bottom: 14px;">
-            <button class="btn btn-secondary" id="transcribeBtn">Faylı transkript et</button>
-            <button class="btn btn-secondary" id="clearFileBtn">Faylı sıfırla</button>
-          </div>
+function saveHistory() {
+  const transcript = transcriptEl?.value?.trim() || "";
+  const shortNews = getPlainText("shortNews");
+  if (!transcript || !shortNews || shortNews === "Hələ nəticə yoxdur.") return;
 
-          <label for="transcript">Transkript / mətn</label>
-          <textarea
-            id="transcript"
-            placeholder="Buraya transkripti və ya mətni daxil et..."
-          ></textarea>
+  const item = {
+    id: Date.now(),
+    topic: topicEl?.options?.[topicEl.selectedIndex]?.text || "",
+    tone: toneEl?.options?.[toneEl.selectedIndex]?.text || "",
+    transcript: transcript.slice(0, 6000),
+    headlines: getPlainText("headlines"),
+    shortNews,
+    studioText: getPlainText("studioText"),
+    telegramPost: getPlainText("telegramPost"),
+    youtubeTitle: getPlainText("youtubeTitle"),
+    youtubeDescription: getPlainText("youtubeDescription"),
+    thumbnailText: getPlainText("thumbnailText"),
+    factCheck: getPlainText("factCheck"),
+    riskBlock: getPlainText("riskBlock"),
+    knownUnknowns: getPlainText("knownUnknowns"),
+    analysis: getPlainText("analysis"),
+    createdAt: new Date().toLocaleString("az-AZ")
+  };
 
-          <label for="topic">Mövzu tipi</label>
-          <select id="topic">
-            <option value="general">Ümumi xəbər</option>
-            <option value="war">Hərbi-siyasi</option>
-            <option value="geopolitics">Geosiyasi analiz</option>
-            <option value="urgent">Təcili xəbər</option>
-            <option value="tv">TV xəbər paketi</option>
-          </select>
+  const history = JSON.parse(localStorage.getItem("v2n_history") || "[]");
+  history.unshift(item);
+  localStorage.setItem("v2n_history", JSON.stringify(history.slice(0, 12)));
+  renderHistory();
+}
 
-          <label for="tone">Ton</label>
-          <select id="tone">
-            <option value="standard">Standart newsroom</option>
-            <option value="hard">Sərt analitik</option>
-            <option value="formal">Rəsmi</option>
-            <option value="sharp">Kəskin media tonu</option>
-          </select>
+function renderHistory() {
+  if (!historyList) return;
 
-          <button class="btn btn-primary" id="analyzeBtn">Paket yarat</button>
+  const history = JSON.parse(localStorage.getItem("v2n_history") || "[]");
 
-          <div class="btn-row">
-            <button class="btn btn-secondary" id="clearBtn">Təmizlə</button>
-            <button class="btn btn-secondary" id="copyAllBtn">Hamısını copy et</button>
-          </div>
+  if (!history.length) {
+    historyList.innerHTML = `<div class="empty-note">Hələ history yoxdur.</div>`;
+    return;
+  }
 
-          <div class="mini-grid">
-            <div class="mini-card">
-              <div class="label">Status</div>
-              <div class="value">Hazırdır ✅</div>
-            </div>
-            <div class="mini-card">
-              <div class="label">Format</div>
-              <div class="value">Newsroom Pack V6</div>
-            </div>
-          </div>
-
-          <div class="panel-note">
-            Qeyd: bu mərhələdə ən stabil iş axını mətn/transkript üzərindən qurulub.
-            Qısa audio/video üçün transkript funksiyası əlavə edilib.
-          </div>
-        </div>
-      </div>
-
-      <!-- CENTER -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">Newsroom output</h2>
-          <div class="panel-sub">
-            Nəticələr burada blok-blok formalaşacaq. Hər blok ayrıca copy/export edilə bilər.
-          </div>
-        </div>
-
-        <div class="panel-body">
-          <div class="output-grid">
-            <div class="output-card tall">
-              <div class="output-head">
-                <h3 class="output-title">Başlıq variantları</h3>
-                <button class="tool-btn" data-copy="headlines">Copy</button>
-              </div>
-              <div class="output-content empty" id="headlines">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card tall">
-              <div class="output-head">
-                <h3 class="output-title">Qısa xəbər</h3>
-                <button class="tool-btn" data-copy="shortNews">Copy</button>
-              </div>
-              <div class="output-content empty" id="shortNews">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">TV studio text</h3>
-                <button class="tool-btn" data-copy="studioText">Copy</button>
-              </div>
-              <div class="output-content empty" id="studioText">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">Telegram post</h3>
-                <button class="tool-btn" data-copy="telegramPost">Copy</button>
-              </div>
-              <div class="output-content empty" id="telegramPost">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">YouTube başlıq</h3>
-                <button class="tool-btn" data-copy="youtubeTitle">Copy</button>
-              </div>
-              <div class="output-content empty" id="youtubeTitle">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">YouTube təsvir</h3>
-                <button class="tool-btn" data-copy="youtubeDescription">Copy</button>
-              </div>
-              <div class="output-content empty" id="youtubeDescription">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">Thumbnail text</h3>
-                <button class="tool-btn" data-copy="thumbnailText">Copy</button>
-              </div>
-              <div class="output-content empty" id="thumbnailText">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">Fact-check qeydləri</h3>
-                <button class="tool-btn" data-copy="factCheck">Copy</button>
-              </div>
-              <div class="output-content empty" id="factCheck">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">Risk / nəticə</h3>
-                <button class="tool-btn" data-copy="riskBlock">Copy</button>
-              </div>
-              <div class="output-content empty" id="riskBlock">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card">
-              <div class="output-head">
-                <h3 class="output-title">Məlum olanlar / qeyri-müəyyənlik</h3>
-                <button class="tool-btn" data-copy="knownUnknowns">Copy</button>
-              </div>
-              <div class="output-content empty" id="knownUnknowns">Hələ nəticə yoxdur.</div>
-            </div>
-
-            <div class="output-card" style="grid-column: 1 / -1; min-height: 260px;">
-              <div class="output-head">
-                <h3 class="output-title">Analitik qeyd</h3>
-                <button class="tool-btn" data-copy="analysis">Copy</button>
-              </div>
-              <div class="output-content empty" id="analysis">Hələ nəticə yoxdur.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT -->
-      <div class="side-stack">
-        <div class="side-card">
-          <h3>History</h3>
-          <div class="side-body" id="historyList">
-            <div class="empty-note">Hələ history yoxdur.</div>
-          </div>
-        </div>
-
-        <div class="side-card">
-          <h3>Export</h3>
-          <div class="side-body">
-            <div class="export-buttons">
-              <button class="btn btn-secondary" id="exportHeadlinesBtn">Başlıqlar</button>
-              <button class="btn btn-secondary" id="exportTelegramBtn">Telegram</button>
-              <button class="btn btn-secondary" id="exportYoutubeBtn">YouTube</button>
-              <button class="btn btn-secondary" id="copySummaryBtn">Qısa xəbər</button>
-            </div>
-
-            <div class="btn-row" style="margin-top: 14px;">
-              <button class="btn btn-primary" id="exportTxtBtn">Tam TXT export</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="side-card">
-          <h3>Qeyd</h3>
-          <div class="side-body">
-            Bu versiyada artıq:
-            <br><br>
-            • mətn/transkript analizi  
-            <br>
-            • qısa audio transkript  
-            <br>
-            • qısa video transkript  
-            <br>
-            • analitik bloklar  
-            <br>
-            • export/history  
-            <br><br>
-            aktivdir.
-          </div>
-        </div>
-      </div>
+  historyList.innerHTML = history.map((item) => `
+    <div class="history-item" data-id="${item.id}">
+      <strong>${item.topic} • ${item.tone}</strong>
+      <span>${(item.shortNews || "").slice(0, 120)}...</span>
+      <span style="margin-top:6px;">${item.createdAt}</span>
     </div>
-  </div>
+  `).join("");
 
-  <script src="/app.js"></script>
-</body>
-</html>
+  document.querySelectorAll(".history-item").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = Number(el.dataset.id);
+      const selected = history.find((x) => x.id === id);
+      if (!selected) return;
+
+      if (transcriptEl) transcriptEl.value = selected.transcript || "";
+      setHeadlines(
+        selected.headlines
+          ? selected.headlines.split("\n").map((x) => x.trim()).filter(Boolean)
+          : []
+      );
+
+      setOutput("shortNews", selected.shortNews);
+      setOutput("studioText", selected.studioText);
+      setOutput("telegramPost", selected.telegramPost);
+      setOutput("youtubeTitle", selected.youtubeTitle);
+      setOutput("youtubeDescription", selected.youtubeDescription);
+      setOutput("thumbnailText", selected.thumbnailText);
+      setOutput("factCheck", selected.factCheck);
+      setOutput("riskBlock", selected.riskBlock);
+      setOutput("knownUnknowns", selected.knownUnknowns);
+      setOutput("analysis", selected.analysis);
+
+      setStatus("History yükləndi ✅");
+    });
+  });
+}
+
+async function requestUploadSignature() {
+  const res = await fetch("/api/upload-signature", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Upload imzası alınmadı.");
+  }
+
+  return data;
+}
+
+function uploadToCloudinary(file, signatureData) {
+  return new Promise((resolve, reject) => {
+    const {
+      cloudName,
+      apiKey,
+      folder,
+      timestamp,
+      signature,
+      resourceType
+    } = signatureData;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp);
+    formData.append("signature", signature);
+    formData.append("folder", folder);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open(
+      "POST",
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType || "video"}/upload`
+    );
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        const percent = (event.loaded / event.total) * 100;
+        setProgress(percent);
+        setUploadStatus(`Upload gedir... ${percent.toFixed(0)}%`);
+      }
+    });
+
+    xhr.onload = () => {
+      try {
+        const response = JSON.parse(xhr.responseText || "{}");
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(response);
+        } else {
+          reject(new Error(response.error?.message || "Cloudinary upload xətası"));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Upload zamanı şəbəkə xətası"));
+    xhr.send(formData);
+  });
+}
+
+async function createJob(uploadResult) {
+  const res = await fetch("/api/jobs/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      publicId: uploadResult.public_id,
+      secureUrl: uploadResult.secure_url,
+      resourceType: uploadResult.resource_type,
+      originalFilename: uploadResult.original_filename,
+      bytes: uploadResult.bytes,
+      duration: uploadResult.duration,
+      format: uploadResult.format
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Job yaradılmadı.");
+  }
+
+  return data;
+}
+
+async function handleUpload() {
+  const file = mediaFileEl?.files?.[0];
+
+  if (!file) {
+    alert("Əvvəl fayl seç.");
+    return;
+  }
+
+  const maxSizeMb = 500;
+  if (file.size > maxSizeMb * 1024 * 1024) {
+    alert(`Fayl çox böyükdür. Maksimum ${maxSizeMb} MB.`);
+    return;
+  }
+
+  setProgress(0);
+  setUploadStatus("Upload hazırlanır...");
+  setJobInfo();
+
+  try {
+    const signatureData = await requestUploadSignature();
+    const uploadResult = await uploadToCloudinary(file, signatureData);
+
+    setProgress(100);
+    setUploadStatus("Upload tamamlandı ✅");
+
+    const job = await createJob(uploadResult);
+
+    setJobInfo({
+      jobId: job.jobId,
+      stage: job.status,
+      assetUrl: uploadResult.secure_url,
+      publicId: uploadResult.public_id
+    });
+
+    setStatus("Video upload + job hazırdır ✅");
+  } catch (error) {
+    console.error(error);
+    setUploadStatus("Upload xətası ❌");
+    setStatus("Upload xətası ❌");
+    alert(error.message || "Upload zamanı xəta baş verdi.");
+  }
+}
+
+async function analyzeTranscript() {
+  const transcript = transcriptEl?.value?.trim() || "";
+  const topic = topicEl?.value || "general";
+  const tone = toneEl?.value || "standard";
+
+  if (!transcript || transcript.length < 30) {
+    alert("Zəhmət olmasa kifayət qədər uzun transkript və ya mətn daxil et.");
+    return;
+  }
+
+  setStatus("AI paket hazırlayır...");
+  resetOutputs();
+
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ transcript, topic, tone })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus("Xəta ❌");
+      setOutput("analysis", data.error || "Server xətası baş verdi.");
+      return;
+    }
+
+    setHeadlines(data.headlines);
+    setOutput("shortNews", data.shortNews);
+    setOutput("studioText", data.studioText);
+    setOutput("telegramPost", data.telegramPost);
+    setOutput("youtubeTitle", data.youtubeTitle);
+    setOutput("youtubeDescription", data.youtubeDescription);
+    setOutput("thumbnailText", data.thumbnailText);
+    setOutput("factCheck", data.factCheck);
+    setOutput("riskBlock", data.riskBlock);
+    setOutput("knownUnknowns", data.knownUnknowns);
+    setOutput("analysis", data.analysis);
+
+    setStatus("Hazırdır ✅");
+    saveHistory();
+  } catch (err) {
+    console.error(err);
+    setStatus("Server xətası ❌");
+    setOutput("analysis", "Serverə qoşulmaq mümkün olmadı.");
+  }
+}
+
+uploadBtn?.addEventListener("click", handleUpload);
+btn?.addEventListener("click", analyzeTranscript);
+
+clearFileBtn?.addEventListener("click", () => {
+  if (mediaFileEl) mediaFileEl.value = "";
+  setProgress(0);
+  setUploadStatus("Fayl sıfırlandı.");
+  setJobInfo();
+});
+
+clearBtn?.addEventListener("click", () => {
+  if (transcriptEl) transcriptEl.value = "";
+  resetOutputs();
+  setStatus("Təmizləndi.");
+});
+
+document.querySelectorAll(".tool-btn").forEach((btnEl) => {
+  btnEl.addEventListener("click", async () => {
+    const targetId = btnEl.dataset.copy;
+    if (!targetId) return;
+
+    const el = document.getElementById(targetId);
+    if (!el) return;
+
+    const text = el.innerText.trim();
+    if (!text || text === "Hələ nəticə yoxdur.") return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = btnEl.textContent;
+      btnEl.textContent = "Copied";
+      setTimeout(() => {
+        btnEl.textContent = old;
+      }, 1200);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+});
+
+copyAllBtn?.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(collectAllOutput());
+    setStatus("Hamısı copy edildi ✅");
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+exportTxtBtn?.addEventListener("click", () => {
+  downloadText("video2news-pack.txt", collectAllOutput());
+});
+
+exportHeadlinesBtn?.addEventListener("click", () => {
+  downloadText("headlines.txt", getPlainText("headlines"));
+});
+
+exportTelegramBtn?.addEventListener("click", () => {
+  downloadText("telegram-post.txt", getPlainText("telegramPost"));
+});
+
+exportYoutubeBtn?.addEventListener("click", () => {
+  const content = `Başlıq:\n${getPlainText("youtubeTitle")}\n\nTəsvir:\n${getPlainText("youtubeDescription")}`;
+  downloadText("youtube-pack.txt", content);
+});
+
+copySummaryBtn?.addEventListener("click", async () => {
+  const text = getPlainText("shortNews");
+  if (!text || text === "Hələ nəticə yoxdur.") return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus("Qısa xəbər copy edildi ✅");
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+renderHistory();
+setProgress(0);
+setJobInfo();
