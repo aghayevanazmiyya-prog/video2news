@@ -286,8 +286,8 @@ uploadBtn?.addEventListener("click", async () => {
   uploadPercent.textContent = "5%";
 
   try {
-    // 1) serverdən upload signature al
-    const signRes = await fetch("/api/upload-sign", {
+    // 1) Upload signature al
+    const signRes = await fetch("/api/upload-signature", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -307,14 +307,13 @@ uploadBtn?.addEventListener("click", async () => {
       return;
     }
 
-    // 2) Cloudinary-yə upload
+    // 2) Cloudinary upload
     const formData = new FormData();
     formData.append("file", file);
     formData.append("api_key", signData.apiKey);
     formData.append("timestamp", signData.timestamp);
     formData.append("signature", signData.signature);
     formData.append("folder", signData.folder || "video2news_uploads");
-    formData.append("resource_type", "video");
 
     uploadStatusText.textContent = "Upload gedir...";
 
@@ -335,8 +334,8 @@ uploadBtn?.addEventListener("click", async () => {
       try {
         if (xhr.status < 200 || xhr.status >= 300) {
           console.error("CLOUDINARY RAW ERROR:", xhr.responseText);
+          uploadStatusText.textContent = "Upload xətası ❌";
           alert("Cloudinary upload uğursuz oldu.");
-          resetUploadUI();
           return;
         }
 
@@ -344,20 +343,20 @@ uploadBtn?.addEventListener("click", async () => {
 
         if (!uploaded?.secure_url || !uploaded?.public_id) {
           console.error("UPLOAD RESPONSE INVALID:", uploaded);
+          uploadStatusText.textContent = "Upload xətası ❌";
           alert("Upload cavabı natamam gəldi.");
-          resetUploadUI();
           return;
         }
 
-        uploadStatusText.textContent = "Upload tamamlandı";
+        uploadStatusText.textContent = "Upload tamamlandı ✅";
         uploadProgressBar.style.width = "100%";
         uploadPercent.textContent = "100%";
         fileUrlBox.textContent = uploaded.secure_url;
         publicIdBox.textContent = uploaded.public_id;
         stageBox.textContent = "uploaded";
 
-        // 3) job yarat
-        const jobRes = await fetch("/api/create-job", {
+        // 3) Job yarat
+        const jobRes = await fetch("/api/jobs/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -378,37 +377,37 @@ uploadBtn?.addEventListener("click", async () => {
         if (!jobRes.ok) {
           console.error("JOB ERROR:", jobData);
           alert(jobData?.error || "Job yaradılmadı.");
+          stageBox.textContent = "job-error";
           return;
         }
 
         jobIdBox.textContent = jobData.jobId || "—";
         stageBox.textContent = jobData.stage || "queued";
 
-        // Əgər backend artıq transcript qaytarırsa, avtomatik textarea-ya yaz
         if (jobData.transcript) {
           transcriptInput.value = jobData.transcript;
         }
 
-        // Əgər backend pack qaytarırsa, birbaşa göstər
         if (jobData.pack) {
           renderPack(jobData.pack);
         }
       } catch (err) {
         console.error("UPLOAD PARSE/POST ERROR:", err);
+        uploadStatusText.textContent = "Upload xətası ❌";
         alert("Upload zamanı emal xətası baş verdi.");
       }
     };
 
     xhr.onerror = function () {
       console.error("XHR NETWORK ERROR");
-      alert("Upload zamanı şəbəkə xətası.");
-      resetUploadUI();
+      uploadStatusText.textContent = "Upload xətası ❌";
+      alert("Upload zamanı şəbəkə xətası");
     };
 
     xhr.send(formData);
   } catch (err) {
     console.error("GENERAL UPLOAD ERROR:", err);
-    alert("Upload zamanı şəbəkə xətası.");
-    resetUploadUI();
+    uploadStatusText.textContent = "Upload xətası ❌";
+    alert("Upload zamanı şəbəkə xətası");
   }
 });
