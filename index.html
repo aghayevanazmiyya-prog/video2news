@@ -16,14 +16,12 @@
       --accent: #ff4d57;
       --accent-2: #ff6a74;
       --success: #22c55e;
+      --warning: #f59e0b;
       --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
       --radius: 20px;
-      --radius-sm: 14px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -38,7 +36,7 @@
     }
 
     .app {
-      max-width: 1320px;
+      max-width: 1380px;
       margin: 0 auto;
     }
 
@@ -98,12 +96,12 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 360px 1fr 260px;
+      grid-template-columns: 390px 1fr 290px;
       gap: 18px;
       align-items: start;
     }
 
-    .panel {
+    .panel, .side-card {
       background: linear-gradient(180deg, rgba(10, 23, 48, 0.98), rgba(8, 17, 33, 0.98));
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -111,16 +109,16 @@
       overflow: hidden;
     }
 
-    .panel-head {
-      padding: 18px 18px 10px;
+    .panel-head, .side-card h3 {
+      padding: 18px 18px 12px;
       border-bottom: 1px solid rgba(120, 156, 255, 0.08);
+      margin: 0;
     }
 
     .panel-title {
       margin: 0;
       font-size: 16px;
       font-weight: 700;
-      color: var(--text);
     }
 
     .panel-sub {
@@ -130,7 +128,7 @@
       line-height: 1.55;
     }
 
-    .panel-body {
+    .panel-body, .side-body {
       padding: 18px;
     }
 
@@ -177,15 +175,8 @@
       margin-bottom: 14px;
     }
 
-    textarea:focus,
-    select:focus,
-    input[type="file"]:focus {
-      border-color: rgba(255, 106, 116, 0.55);
-      box-shadow: 0 0 0 4px rgba(255, 77, 87, 0.12);
-    }
-
     textarea {
-      min-height: 190px;
+      min-height: 180px;
       resize: vertical;
       line-height: 1.6;
     }
@@ -198,17 +189,14 @@
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.12s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.12s ease, opacity 0.2s ease;
     }
 
-    .btn:hover {
-      transform: translateY(-1px);
-    }
+    .btn:hover { transform: translateY(-1px); }
 
     .btn-primary {
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #fff;
-      box-shadow: 0 12px 24px rgba(255, 77, 87, 0.22);
+      color: white;
     }
 
     .btn-secondary {
@@ -224,9 +212,7 @@
       margin-bottom: 14px;
     }
 
-    .btn-row .btn {
-      flex: 1;
-    }
+    .btn-row .btn { flex: 1; }
 
     .mini-grid {
       display: grid;
@@ -252,12 +238,39 @@
       font-size: 15px;
       font-weight: 700;
       color: var(--text);
+      word-break: break-word;
     }
 
-    .panel-note {
-      margin-top: 14px;
+    .upload-box {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(13, 26, 50, 0.96);
+      border: 1px solid rgba(159, 176, 209, 0.08);
+      margin-bottom: 14px;
+    }
+
+    .progress-wrap {
+      margin-top: 10px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #60a5fa, #22c55e);
+      transition: width 0.2s ease;
+    }
+
+    .progress-text {
+      margin-top: 8px;
       font-size: 12px;
-      line-height: 1.55;
       color: var(--muted);
     }
 
@@ -277,10 +290,6 @@
       overflow: hidden;
     }
 
-    .output-card.tall {
-      min-height: 240px;
-    }
-
     .output-head {
       display: flex;
       justify-content: space-between;
@@ -294,7 +303,6 @@
       margin: 0;
       font-size: 15px;
       font-weight: 700;
-      color: var(--text);
     }
 
     .tool-btn {
@@ -318,9 +326,7 @@
       overflow: auto;
     }
 
-    .empty {
-      color: #7183a8;
-    }
+    .empty { color: #7183a8; }
 
     .headlines-list {
       display: flex;
@@ -342,28 +348,6 @@
       gap: 14px;
     }
 
-    .side-card {
-      background: linear-gradient(180deg, rgba(10, 23, 48, 0.98), rgba(8, 17, 33, 0.98));
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .side-card h3 {
-      margin: 0;
-      padding: 16px 16px 12px;
-      font-size: 15px;
-      border-bottom: 1px solid rgba(159, 176, 209, 0.08);
-    }
-
-    .side-body {
-      padding: 14px 16px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
     .history-item {
       display: flex;
       flex-direction: column;
@@ -374,12 +358,6 @@
       border: 1px solid rgba(159, 176, 209, 0.08);
       cursor: pointer;
       margin-bottom: 10px;
-      transition: 0.2s ease;
-    }
-
-    .history-item:hover {
-      border-color: rgba(255, 106, 116, 0.35);
-      transform: translateY(-1px);
     }
 
     .history-item strong {
@@ -406,21 +384,10 @@
     }
 
     @media (max-width: 1200px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .output-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .topbar {
-        flex-direction: column;
-      }
-
-      .status-wrap {
-        justify-content: flex-start;
-      }
+      .layout { grid-template-columns: 1fr; }
+      .output-grid { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; }
+      .status-wrap { justify-content: flex-start; }
     }
   </style>
 </head>
@@ -430,8 +397,7 @@
       <div class="brand">
         <h1>Video2News</h1>
         <p>
-          Transkripti daxil et, AI onu strukturlaşdırılmış newsroom paketinə çevirsin.
-          Başlıqlar, qısa xəbər, studio text, Telegram, YouTube və analitik blok bir paneldə.
+          Videonu və ya transkripti daxil et. Sistem yükləmə, analiz və newsroom çıxışını bir paneldə toplasın.
         </p>
       </div>
 
@@ -445,57 +411,90 @@
     </div>
 
     <div class="layout">
-      <!-- LEFT -->
       <div class="panel">
         <div class="panel-head">
           <h2 class="panel-title">Input paneli</h2>
           <div class="panel-sub">
-            Mətn və ya transkript daxil et. Qısa audio/video faylı da yükləyib transkript çıxara bilərsən.
+            Qısa və uzun videolar üçün upload pipeline hazırlanır. Bu mərhələdə Cloudinary upload + job yaratma aktivdir.
           </div>
         </div>
 
         <div class="panel-body">
           <div class="dropzone">
-            <strong>Drag & drop zona</strong>
+            <strong>Video upload</strong>
             <span>
-              Qısa audio/video və ya mətn faylı burada istifadə oluna bilər.
-              Bu mərhələdə qısa media upload + transkript dəstəyi aktivdir.
+              3 saniyədən 15 dəqiqəyə qədər videolar üçün birbaşa upload nəzərdə tutulur.
+              Upload sonrası job yaradılır və növbəti mərhələdə transkript/analiz işləyəcək.
             </span>
           </div>
 
-          <label for="mediaFile">Audio / video faylı</label>
+          <label for="mediaFile">Video / audio faylı</label>
           <input
             id="mediaFile"
             type="file"
-            accept="audio/*,video/mp4,video/webm,video/quicktime"
+            accept="video/mp4,video/webm,video/quicktime,audio/*"
           />
 
-          <div class="btn-row" style="margin-bottom: 14px;">
-            <button class="btn btn-secondary" id="transcribeBtn">Faylı transkript et</button>
+          <div class="btn-row">
+            <button class="btn btn-secondary" id="uploadBtn">Cloudinary-yə yüklə</button>
             <button class="btn btn-secondary" id="clearFileBtn">Faylı sıfırla</button>
           </div>
 
-          <label for="transcript">Transkript / mətn</label>
-          <textarea
-            id="transcript"
-            placeholder="Buraya transkripti və ya mətni daxil et..."
-          ></textarea>
+          <div class="upload-box">
+            <div class="mini-card" style="margin-bottom:10px;">
+              <div class="label">Upload status</div>
+              <div class="value" id="uploadStatus">Hələ upload yoxdur</div>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress-bar">
+                <div class="progress-fill" id="uploadProgressFill"></div>
+              </div>
+              <div class="progress-text" id="uploadProgressText">0%</div>
+            </div>
+          </div>
+
+          <div class="mini-grid">
+            <div class="mini-card">
+              <div class="label">Job ID</div>
+              <div class="value" id="jobIdBox">—</div>
+            </div>
+            <div class="mini-card">
+              <div class="label">Mərhələ</div>
+              <div class="value" id="jobStageBox">idle</div>
+            </div>
+          </div>
+
+          <div class="mini-grid" style="margin-top:10px;">
+            <div class="mini-card">
+              <div class="label">Fayl URL</div>
+              <div class="value" id="assetUrlBox">—</div>
+            </div>
+            <div class="mini-card">
+              <div class="label">Public ID</div>
+              <div class="value" id="publicIdBox">—</div>
+            </div>
+          </div>
+
+          <label for="transcript" style="margin-top: 14px;">Transkript / mətn</label>
+          <textarea id="transcript" placeholder="Buraya transkripti və ya mətni daxil et..."></textarea>
 
           <label for="topic">Mövzu tipi</label>
           <select id="topic">
             <option value="general">Ümumi xəbər</option>
-            <option value="war">Hərbi-siyasi</option>
-            <option value="geopolitics">Geosiyasi analiz</option>
-            <option value="urgent">Təcili xəbər</option>
-            <option value="tv">TV xəbər paketi</option>
+            <option value="military">Hərbi / Təhlükəsizlik</option>
+            <option value="politics">Siyasət</option>
+            <option value="economy">İqtisadiyyat</option>
+            <option value="tech">Texnologiya</option>
           </select>
 
           <label for="tone">Ton</label>
           <select id="tone">
             <option value="standard">Standart newsroom</option>
-            <option value="hard">Sərt analitik</option>
-            <option value="formal">Rəsmi</option>
-            <option value="sharp">Kəskin media tonu</option>
+            <option value="formal">Daha rəsmi</option>
+            <option value="sharp">Daha sərt analitik</option>
+            <option value="tv">TV aparıcı dili</option>
+            <option value="warlab">War Lab mode</option>
           </select>
 
           <button class="btn btn-primary" id="analyzeBtn">Paket yarat</button>
@@ -512,29 +511,23 @@
             </div>
             <div class="mini-card">
               <div class="label">Format</div>
-              <div class="value">Newsroom Pack V6</div>
+              <div class="value">V7.1 Upload Layer</div>
             </div>
-          </div>
-
-          <div class="panel-note">
-            Qeyd: bu mərhələdə ən stabil iş axını mətn/transkript üzərindən qurulub.
-            Qısa audio/video üçün transkript funksiyası əlavə edilib.
           </div>
         </div>
       </div>
 
-      <!-- CENTER -->
       <div class="panel">
         <div class="panel-head">
           <h2 class="panel-title">Newsroom output</h2>
           <div class="panel-sub">
-            Nəticələr burada blok-blok formalaşacaq. Hər blok ayrıca copy/export edilə bilər.
+            Hazırda bu panel transkript əsaslı analiz verir. Video pipeline tamamlandıqca avtomatik dolacaq.
           </div>
         </div>
 
         <div class="panel-body">
           <div class="output-grid">
-            <div class="output-card tall">
+            <div class="output-card">
               <div class="output-head">
                 <h3 class="output-title">Başlıq variantları</h3>
                 <button class="tool-btn" data-copy="headlines">Copy</button>
@@ -542,7 +535,7 @@
               <div class="output-content empty" id="headlines">Hələ nəticə yoxdur.</div>
             </div>
 
-            <div class="output-card tall">
+            <div class="output-card">
               <div class="output-head">
                 <h3 class="output-title">Qısa xəbər</h3>
                 <button class="tool-btn" data-copy="shortNews">Copy</button>
@@ -625,7 +618,6 @@
         </div>
       </div>
 
-      <!-- RIGHT -->
       <div class="side-stack">
         <div class="side-card">
           <h3>History</h3>
@@ -653,17 +645,17 @@
         <div class="side-card">
           <h3>Qeyd</h3>
           <div class="side-body">
-            Bu versiyada artıq:
+            Bu mərhələdə:
             <br><br>
-            • mətn/transkript analizi  
+            • Cloudinary upload
             <br>
-            • qısa audio transkript  
+            • upload progress
             <br>
-            • qısa video transkript  
+            • job creation
             <br>
-            • analitik bloklar  
+            • metadata capture
             <br>
-            • export/history  
+            • transkript əsaslı newsroom paket
             <br><br>
             aktivdir.
           </div>
