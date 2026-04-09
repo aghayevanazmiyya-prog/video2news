@@ -222,74 +222,6 @@ function renderHistory() {
   });
 }
 
-async function requestUploadSignature() {
-  const res = await fetch("/api/upload-signature", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({})
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Upload imzası alınmadı.");
-  }
-
-  return data;
-}
-
-function uploadToCloudinary(file, signatureData) {
-  return new Promise((resolve, reject) => {
-    const {
-      cloudName,
-      apiKey,
-      folder,
-      timestamp,
-      signature,
-      resourceType
-    } = signatureData;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("api_key", apiKey);
-    formData.append("timestamp", timestamp);
-    formData.append("signature", signature);
-    formData.append("folder", folder);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open(
-      "POST",
-      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType || "video"}/upload`
-    );
-
-    xhr.upload.addEventListener("progress", (event) => {
-      if (event.lengthComputable) {
-        const percent = (event.loaded / event.total) * 100;
-        setProgress(percent);
-        setUploadStatus(`Upload gedir... ${percent.toFixed(0)}%`);
-      }
-    });
-
-    xhr.onload = () => {
-      try {
-        const response = JSON.parse(xhr.responseText || "{}");
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(response);
-        } else {
-          reject(new Error(response.error?.message || "Cloudinary upload xətası"));
-        }
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    xhr.onerror = () => reject(new Error("Upload zamanı şəbəkə xətası"));
-    xhr.send(formData);
-  });
-}
-
 async function createJob(uploadResult, originalFile) {
   const res = await fetch("/api/jobs/create", {
     method: "POST",
@@ -299,8 +231,8 @@ async function createJob(uploadResult, originalFile) {
     body: JSON.stringify({
       publicId: uploadResult.public_id,
       secureUrl: uploadResult.secure_url,
-      resourceType: uploadResult.resource_type,
-      originalFilename: uploadResult.original_filename || originalFile?.name || "",
+      resourceType: "video",
+      originalFilename: originalFile?.name || "",
       bytes: uploadResult.bytes || originalFile?.size || 0,
       duration: uploadResult.duration || 0,
       format: uploadResult.format || ""
@@ -331,23 +263,40 @@ async function handleUpload() {
   }
 
   setProgress(0);
-  setUploadStatus("Upload hazırlanır...");
+  setUploadStatus("Upload başlayır...");
   setJobInfo();
 
   try {
-    const signatureData = await requestUploadSignature();
-    const uploadResult = await uploadToCloudinary(file, signatureData);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const uploadRes = await fetch("/api/upload-video", {
+      method: "POST",
+      body: formData
+    });
+
+    const uploadData = await uploadRes.json();
+
+    if (!uploadRes.ok) {
+      throw new Error(uploadData.error || "Upload xətası");
+    }
 
     setProgress(100);
     setUploadStatus("Upload tamamlandı ✅");
 
-    const job = await createJob(uploadResult, file);
+    const job = await createJob({
+      public_id: uploadData.public_id,
+      secure_url: uploadData.secure_url,
+      bytes: uploadData.bytes,
+      duration: uploadData.duration,
+      format: uploadData.format
+    }, file);
 
     setJobInfo({
       jobId: job.jobId,
       stage: job.status,
-      assetUrl: uploadResult.secure_url,
-      publicId: uploadResult.public_id
+      assetUrl: uploadData.secure_url,
+      publicId: uploadData.public_id
     });
 
     setStatus("Video upload + job hazırdır ✅");
