@@ -1,141 +1,197 @@
-const btn = document.getElementById("analyzeBtn");
-const statusEl = document.getElementById("status");
-const transcriptEl = document.getElementById("transcript");
-const topicEl = document.getElementById("topic");
-const toneEl = document.getElementById("tone");
-const clearBtn = document.getElementById("clearBtn");
-const copyAllBtn = document.getElementById("copyAllBtn");
-const exportTxtBtn = document.getElementById("exportTxtBtn");
-const exportHeadlinesBtn = document.getElementById("exportHeadlinesBtn");
-const exportTelegramBtn = document.getElementById("exportTelegramBtn");
-const exportYoutubeBtn = document.getElementById("exportYoutubeBtn");
-const copySummaryBtn = document.getElementById("copySummaryBtn");
-const historyList = document.getElementById("historyList");
+const $ = (id) => document.getElementById(id);
 
-const mediaFileEl = document.getElementById("mediaFile");
-const uploadBtn = document.getElementById("uploadBtn");
-const clearFileBtn = document.getElementById("clearFileBtn");
+const transcriptInput = $("transcriptInput");
+const topicType = $("topicType");
+const toneSelect = $("toneSelect");
+const generateBtn = $("generateBtn");
+const clearBtn = $("clearBtn");
 
-const uploadStatusEl = document.getElementById("uploadStatus");
-const uploadProgressFill = document.getElementById("uploadProgressFill");
-const uploadProgressText = document.getElementById("uploadProgressText");
-const jobIdBox = document.getElementById("jobIdBox");
-const jobStageBox = document.getElementById("jobStageBox");
-const assetUrlBox = document.getElementById("assetUrlBox");
-const publicIdBox = document.getElementById("publicIdBox");
+const resultTitle = $("resultTitle");
+const resultShort = $("resultShort");
+const resultStudio = $("resultStudio");
+const resultTelegram = $("resultTelegram");
+const resultYouTubeTitle = $("resultYouTubeTitle");
+const resultYouTubeDesc = $("resultYouTubeDesc");
+const resultThumbnail = $("resultThumbnail");
+const resultFactcheck = $("resultFactcheck");
 
-const ids = [
-  "headlines",
-  "shortNews",
-  "studioText",
-  "telegramPost",
-  "youtubeTitle",
-  "youtubeDescription",
-  "thumbnailText",
-  "factCheck",
-  "riskBlock",
-  "knownUnknowns",
-  "analysis"
-];
+const historyList = $("historyList");
 
-function setStatus(text) {
-  if (statusEl) statusEl.textContent = text;
+const exportTitlesBtn = $("exportTitlesBtn");
+const exportTelegramBtn = $("exportTelegramBtn");
+const exportYouTubeBtn = $("exportYouTubeBtn");
+const exportShortBtn = $("exportShortBtn");
+const exportAllBtn = $("exportAllBtn");
+
+const mediaFile = $("mediaFile");
+const uploadBtn = $("uploadBtn");
+const resetUploadBtn = $("resetUploadBtn");
+
+const uploadStatusText = $("uploadStatusText");
+const uploadProgressBar = $("uploadProgressBar");
+const uploadPercent = $("uploadPercent");
+const jobIdBox = $("jobIdBox");
+const stageBox = $("stageBox");
+const fileUrlBox = $("fileUrlBox");
+const publicIdBox = $("publicIdBox");
+
+let latestPack = null;
+
+function setText(el, value) {
+  if (!el) return;
+  el.textContent = value || "Hələ nəticə yoxdur.";
 }
 
-function setUploadStatus(text) {
-  if (uploadStatusEl) uploadStatusEl.textContent = text;
+function setHTML(el, value) {
+  if (!el) return;
+  el.innerHTML = value || "Hələ nəticə yoxdur.";
 }
 
-function setProgress(percent) {
-  const safe = Math.max(0, Math.min(100, Number(percent) || 0));
-  if (uploadProgressFill) uploadProgressFill.style.width = `${safe}%`;
-  if (uploadProgressText) uploadProgressText.textContent = `${safe.toFixed(0)}%`;
+function copyText(text) {
+  navigator.clipboard.writeText(text || "");
 }
 
-function setJobInfo({ jobId = "—", stage = "idle", assetUrl = "—", publicId = "—" } = {}) {
-  if (jobIdBox) jobIdBox.textContent = jobId;
-  if (jobStageBox) jobStageBox.textContent = stage;
-  if (assetUrlBox) assetUrlBox.textContent = assetUrl;
-  if (publicIdBox) publicIdBox.textContent = publicId;
-}
-
-function resetOutputs() {
-  ids.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = "Hələ nəticə yoxdur.";
-    el.classList.add("empty");
+function bindCopyButtons() {
+  document.querySelectorAll("[data-copy-target]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = $(btn.dataset.copyTarget);
+      copyText(target?.innerText || target?.textContent || "");
+      btn.textContent = "Kopyalandı";
+      setTimeout(() => (btn.textContent = "Copy"), 1200);
+    });
   });
 }
 
-function setOutput(id, text) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text || "Nəticə yoxdur.";
-  el.classList.remove("empty");
+bindCopyButtons();
+
+function cleanLines(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((x) => String(x).trim()).filter(Boolean);
 }
 
-function setHeadlines(items) {
-  const el = document.getElementById("headlines");
-  if (!el) return;
+function renderTitles(titles) {
+  if (!titles || !titles.length) return "Hələ nəticə yoxdur.";
+  return titles.map((t) => `<div class="title-pill">${t}</div>`).join("");
+}
 
-  if (!Array.isArray(items) || !items.length) {
-    el.textContent = "Nəticə yoxdur.";
-    el.classList.remove("empty");
+function renderPack(pack) {
+  latestPack = pack;
+
+  setHTML(resultTitle, renderTitles(cleanLines(pack.headlines)));
+  setText(resultShort, pack.short_news);
+  setText(resultStudio, pack.studio_text);
+  setText(resultTelegram, pack.telegram_post);
+  setText(resultYouTubeTitle, pack.youtube_title);
+  setText(resultYouTubeDesc, pack.youtube_description);
+  setText(resultThumbnail, pack.thumbnail_text);
+  setText(resultFactcheck, pack.factcheck_notes);
+
+  saveHistory(pack);
+}
+
+function saveHistory(pack) {
+  const old = JSON.parse(localStorage.getItem("video2news_history") || "[]");
+  const item = {
+    createdAt: new Date().toLocaleString(),
+    topic: topicType.value,
+    tone: toneSelect.value,
+    headline: pack?.headlines?.[0] || "Adsız paket",
+    pack,
+  };
+  old.unshift(item);
+  localStorage.setItem("video2news_history", JSON.stringify(old.slice(0, 15)));
+  renderHistory();
+}
+
+function renderHistory() {
+  const items = JSON.parse(localStorage.getItem("video2news_history") || "[]");
+
+  if (!items.length) {
+    historyList.innerHTML = `<div class="history-empty">Hələ history yoxdur.</div>`;
     return;
   }
 
-  el.innerHTML = `
-    <div class="headlines-list">
-      ${items.map((item) => `<div class="headline-item">${item}</div>`).join("")}
-    </div>
-  `;
-  el.classList.remove("empty");
+  historyList.innerHTML = items
+    .map(
+      (item, idx) => `
+      <div class="history-card" data-history-index="${idx}">
+        <div class="history-title">${item.headline}</div>
+        <div class="history-meta">${item.topic} • ${item.tone}</div>
+        <div class="history-date">${item.createdAt}</div>
+      </div>
+    `
+    )
+    .join("");
+
+  document.querySelectorAll(".history-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const items = JSON.parse(localStorage.getItem("video2news_history") || "[]");
+      const index = Number(card.dataset.historyIndex);
+      const item = items[index];
+      if (item?.pack) renderPack(item.pack);
+    });
+  });
 }
 
-function getPlainText(id) {
-  const el = document.getElementById(id);
-  return el ? (el.innerText || "").trim() : "";
-}
+renderHistory();
 
-function collectAllOutput() {
-  return [
-    "=== BAŞLIQ VARİANTLARI ===",
-    getPlainText("headlines"),
-    "",
-    "=== QISA XƏBƏR ===",
-    getPlainText("shortNews"),
-    "",
-    "=== TV STUDIO TEXT ===",
-    getPlainText("studioText"),
-    "",
-    "=== TELEGRAM POST ===",
-    getPlainText("telegramPost"),
-    "",
-    "=== YOUTUBE BAŞLIQ ===",
-    getPlainText("youtubeTitle"),
-    "",
-    "=== YOUTUBE TƏSVİR ===",
-    getPlainText("youtubeDescription"),
-    "",
-    "=== THUMBNAIL TEXT ===",
-    getPlainText("thumbnailText"),
-    "",
-    "=== FACT-CHECK QEYDLƏRİ ===",
-    getPlainText("factCheck"),
-    "",
-    "=== RİSK / NƏTİCƏ ===",
-    getPlainText("riskBlock"),
-    "",
-    "=== MƏLUM OLANLAR / QEYRİ-MÜƏYYƏNLİK ===",
-    getPlainText("knownUnknowns"),
-    "",
-    "=== ANALİTİK QEYD ===",
-    getPlainText("analysis")
-  ].join("\n");
-}
+generateBtn?.addEventListener("click", async () => {
+  const text = transcriptInput.value.trim();
 
-function downloadText(filename, content) {
+  if (!text) {
+    alert("Zəhmət olmasa mətn və ya transkript daxil et.");
+    return;
+  }
+
+  generateBtn.disabled = true;
+  generateBtn.textContent = "Hazırlanır...";
+
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        transcript: text,
+        topicType: topicType.value,
+        tone: toneSelect.value,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error(data);
+      alert(data?.error || "Server xətası baş verdi.");
+      return;
+    }
+
+    renderPack(data);
+  } catch (err) {
+    console.error(err);
+    alert("Şəbəkə xətası baş verdi.");
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = "Newsroom paketi yarat";
+  }
+});
+
+clearBtn?.addEventListener("click", () => {
+  transcriptInput.value = "";
+  latestPack = null;
+
+  setHTML(resultTitle, "Hələ nəticə yoxdur.");
+  setText(resultShort, "Hələ nəticə yoxdur.");
+  setText(resultStudio, "Hələ nəticə yoxdur.");
+  setText(resultTelegram, "Hələ nəticə yoxdur.");
+  setText(resultYouTubeTitle, "Hələ nəticə yoxdur.");
+  setText(resultYouTubeDesc, "Hələ nəticə yoxdur.");
+  setText(resultThumbnail, "Hələ nəticə yoxdur.");
+  setText(resultFactcheck, "Hələ nəticə yoxdur.");
+});
+
+function exportText(content, filename = "video2news.txt") {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -145,349 +201,214 @@ function downloadText(filename, content) {
   URL.revokeObjectURL(url);
 }
 
-function saveHistory() {
-  const transcript = transcriptEl?.value?.trim() || "";
-  const shortNews = getPlainText("shortNews");
-  if (!transcript || !shortNews || shortNews === "Hələ nəticə yoxdur.") return;
-
-  const item = {
-    id: Date.now(),
-    topic: topicEl?.options?.[topicEl.selectedIndex]?.text || "",
-    tone: toneEl?.options?.[toneEl.selectedIndex]?.text || "",
-    transcript: transcript.slice(0, 6000),
-    headlines: getPlainText("headlines"),
-    shortNews,
-    studioText: getPlainText("studioText"),
-    telegramPost: getPlainText("telegramPost"),
-    youtubeTitle: getPlainText("youtubeTitle"),
-    youtubeDescription: getPlainText("youtubeDescription"),
-    thumbnailText: getPlainText("thumbnailText"),
-    factCheck: getPlainText("factCheck"),
-    riskBlock: getPlainText("riskBlock"),
-    knownUnknowns: getPlainText("knownUnknowns"),
-    analysis: getPlainText("analysis"),
-    createdAt: new Date().toLocaleString("az-AZ")
-  };
-
-  const history = JSON.parse(localStorage.getItem("v2n_history") || "[]");
-  history.unshift(item);
-  localStorage.setItem("v2n_history", JSON.stringify(history.slice(0, 12)));
-  renderHistory();
-}
-
-function renderHistory() {
-  if (!historyList) return;
-
-  const history = JSON.parse(localStorage.getItem("v2n_history") || "[]");
-
-  if (!history.length) {
-    historyList.innerHTML = `<div class="empty-note">Hələ history yoxdur.</div>`;
-    return;
-  }
-
-  historyList.innerHTML = history.map((item) => `
-    <div class="history-item" data-id="${item.id}">
-      <strong>${item.topic} • ${item.tone}</strong>
-      <span>${(item.shortNews || "").slice(0, 120)}...</span>
-      <span style="margin-top:6px;">${item.createdAt}</span>
-    </div>
-  `).join("");
-
-  document.querySelectorAll(".history-item").forEach((el) => {
-    el.addEventListener("click", () => {
-      const id = Number(el.dataset.id);
-      const selected = history.find((x) => x.id === id);
-      if (!selected) return;
-
-      if (transcriptEl) transcriptEl.value = selected.transcript || "";
-      setHeadlines(
-        selected.headlines
-          ? selected.headlines.split("\n").map((x) => x.trim()).filter(Boolean)
-          : []
-      );
-
-      setOutput("shortNews", selected.shortNews);
-      setOutput("studioText", selected.studioText);
-      setOutput("telegramPost", selected.telegramPost);
-      setOutput("youtubeTitle", selected.youtubeTitle);
-      setOutput("youtubeDescription", selected.youtubeDescription);
-      setOutput("thumbnailText", selected.thumbnailText);
-      setOutput("factCheck", selected.factCheck);
-      setOutput("riskBlock", selected.riskBlock);
-      setOutput("knownUnknowns", selected.knownUnknowns);
-      setOutput("analysis", selected.analysis);
-
-      setStatus("History yükləndi ✅");
-    });
-  });
-}
-
-async function requestUploadSignature() {
-  const res = await fetch("/api/upload-signature", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({})
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Upload imzası alınmadı.");
-  }
-
-  return data;
-}
-
-function uploadToCloudinary(file, signatureData) {
-  return new Promise((resolve, reject) => {
-    const {
-      cloudName,
-      apiKey,
-      folder,
-      timestamp,
-      signature,
-      resourceType
-    } = signatureData;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("api_key", apiKey);
-    formData.append("timestamp", timestamp);
-    formData.append("signature", signature);
-    formData.append("folder", folder);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open(
-      "POST",
-      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType || "video"}/upload`
-    );
-
-    xhr.upload.addEventListener("progress", (event) => {
-      if (event.lengthComputable) {
-        const percent = (event.loaded / event.total) * 100;
-        setProgress(percent);
-        setUploadStatus(`Upload gedir... ${percent.toFixed(0)}%`);
-      }
-    });
-
-    xhr.onload = () => {
-      try {
-        const response = JSON.parse(xhr.responseText || "{}");
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(response);
-        } else {
-          reject(new Error(response.error?.message || "Cloudinary upload xətası"));
-        }
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    xhr.onerror = () => reject(new Error("Upload zamanı şəbəkə xətası"));
-    xhr.send(formData);
-  });
-}
-
-async function createJob(uploadResult) {
-  const res = await fetch("/api/jobs/create", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      publicId: uploadResult.public_id,
-      secureUrl: uploadResult.secure_url,
-      resourceType: uploadResult.resource_type,
-      originalFilename: uploadResult.original_filename,
-      bytes: uploadResult.bytes,
-      duration: uploadResult.duration,
-      format: uploadResult.format
-    })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Job yaradılmadı.");
-  }
-
-  return data;
-}
-
-async function handleUpload() {
-  const file = mediaFileEl?.files?.[0];
-
-  if (!file) {
-    alert("Əvvəl fayl seç.");
-    return;
-  }
-
-  const maxSizeMb = 500;
-  if (file.size > maxSizeMb * 1024 * 1024) {
-    alert(`Fayl çox böyükdür. Maksimum ${maxSizeMb} MB.`);
-    return;
-  }
-
-  setProgress(0);
-  setUploadStatus("Upload hazırlanır...");
-  setJobInfo();
-
-  try {
-    const signatureData = await requestUploadSignature();
-    const uploadResult = await uploadToCloudinary(file, signatureData);
-
-    setProgress(100);
-    setUploadStatus("Upload tamamlandı ✅");
-
-    const job = await createJob(uploadResult);
-
-    setJobInfo({
-      jobId: job.jobId,
-      stage: job.status,
-      assetUrl: uploadResult.secure_url,
-      publicId: uploadResult.public_id
-    });
-
-    setStatus("Video upload + job hazırdır ✅");
-  } catch (error) {
-    console.error(error);
-    setUploadStatus("Upload xətası ❌");
-    setStatus("Upload xətası ❌");
-    alert(error.message || "Upload zamanı xəta baş verdi.");
-  }
-}
-
-async function analyzeTranscript() {
-  const transcript = transcriptEl?.value?.trim() || "";
-  const topic = topicEl?.value || "general";
-  const tone = toneEl?.value || "standard";
-
-  if (!transcript || transcript.length < 30) {
-    alert("Zəhmət olmasa kifayət qədər uzun transkript və ya mətn daxil et.");
-    return;
-  }
-
-  setStatus("AI paket hazırlayır...");
-  resetOutputs();
-
-  try {
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ transcript, topic, tone })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setStatus("Xəta ❌");
-      setOutput("analysis", data.error || "Server xətası baş verdi.");
-      return;
-    }
-
-    setHeadlines(data.headlines);
-    setOutput("shortNews", data.shortNews);
-    setOutput("studioText", data.studioText);
-    setOutput("telegramPost", data.telegramPost);
-    setOutput("youtubeTitle", data.youtubeTitle);
-    setOutput("youtubeDescription", data.youtubeDescription);
-    setOutput("thumbnailText", data.thumbnailText);
-    setOutput("factCheck", data.factCheck);
-    setOutput("riskBlock", data.riskBlock);
-    setOutput("knownUnknowns", data.knownUnknowns);
-    setOutput("analysis", data.analysis);
-
-    setStatus("Hazırdır ✅");
-    saveHistory();
-  } catch (err) {
-    console.error(err);
-    setStatus("Server xətası ❌");
-    setOutput("analysis", "Serverə qoşulmaq mümkün olmadı.");
-  }
-}
-
-uploadBtn?.addEventListener("click", handleUpload);
-btn?.addEventListener("click", analyzeTranscript);
-
-clearFileBtn?.addEventListener("click", () => {
-  if (mediaFileEl) mediaFileEl.value = "";
-  setProgress(0);
-  setUploadStatus("Fayl sıfırlandı.");
-  setJobInfo();
-});
-
-clearBtn?.addEventListener("click", () => {
-  if (transcriptEl) transcriptEl.value = "";
-  resetOutputs();
-  setStatus("Təmizləndi.");
-});
-
-document.querySelectorAll(".tool-btn").forEach((btnEl) => {
-  btnEl.addEventListener("click", async () => {
-    const targetId = btnEl.dataset.copy;
-    if (!targetId) return;
-
-    const el = document.getElementById(targetId);
-    if (!el) return;
-
-    const text = el.innerText.trim();
-    if (!text || text === "Hələ nəticə yoxdur.") return;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      const old = btnEl.textContent;
-      btnEl.textContent = "Copied";
-      setTimeout(() => {
-        btnEl.textContent = old;
-      }, 1200);
-    } catch (e) {
-      console.error(e);
-    }
-  });
-});
-
-copyAllBtn?.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(collectAllOutput());
-    setStatus("Hamısı copy edildi ✅");
-  } catch (e) {
-    console.error(e);
-  }
-});
-
-exportTxtBtn?.addEventListener("click", () => {
-  downloadText("video2news-pack.txt", collectAllOutput());
-});
-
-exportHeadlinesBtn?.addEventListener("click", () => {
-  downloadText("headlines.txt", getPlainText("headlines"));
+exportTitlesBtn?.addEventListener("click", () => {
+  if (!latestPack) return alert("Export üçün əvvəlcə paket yarat.");
+  exportText((latestPack.headlines || []).join("\n"), "basliqlar.txt");
 });
 
 exportTelegramBtn?.addEventListener("click", () => {
-  downloadText("telegram-post.txt", getPlainText("telegramPost"));
+  if (!latestPack) return alert("Export üçün əvvəlcə paket yarat.");
+  exportText(latestPack.telegram_post || "", "telegram_post.txt");
 });
 
-exportYoutubeBtn?.addEventListener("click", () => {
-  const content = `Başlıq:\n${getPlainText("youtubeTitle")}\n\nTəsvir:\n${getPlainText("youtubeDescription")}`;
-  downloadText("youtube-pack.txt", content);
+exportYouTubeBtn?.addEventListener("click", () => {
+  if (!latestPack) return alert("Export üçün əvvəlcə paket yarat.");
+  exportText(
+    `Başlıq:\n${latestPack.youtube_title || ""}\n\nTəsvir:\n${latestPack.youtube_description || ""}`,
+    "youtube.txt"
+  );
 });
 
-copySummaryBtn?.addEventListener("click", async () => {
-  const text = getPlainText("shortNews");
-  if (!text || text === "Hələ nəticə yoxdur.") return;
+exportShortBtn?.addEventListener("click", () => {
+  if (!latestPack) return alert("Export üçün əvvəlcə paket yarat.");
+  exportText(latestPack.short_news || "", "qisa_xeber.txt");
+});
+
+exportAllBtn?.addEventListener("click", () => {
+  if (!latestPack) return alert("Export üçün əvvəlcə paket yarat.");
+
+  const content = `
+=== BAŞLIQLAR ===
+${(latestPack.headlines || []).join("\n")}
+
+=== QISA XƏBƏR ===
+${latestPack.short_news || ""}
+
+=== TV STUDIO TEXT ===
+${latestPack.studio_text || ""}
+
+=== TELEGRAM POST ===
+${latestPack.telegram_post || ""}
+
+=== YOUTUBE BAŞLIQ ===
+${latestPack.youtube_title || ""}
+
+=== YOUTUBE TƏSVİR ===
+${latestPack.youtube_description || ""}
+
+=== THUMBNAIL TEXT ===
+${latestPack.thumbnail_text || ""}
+
+=== FACT-CHECK QEYDLƏRİ ===
+${latestPack.factcheck_notes || ""}
+  `.trim();
+
+  exportText(content, "video2news_full_export.txt");
+});
+
+function resetUploadUI() {
+  uploadStatusText.textContent = "Hələ upload yoxdur.";
+  uploadProgressBar.style.width = "0%";
+  uploadPercent.textContent = "0%";
+  jobIdBox.textContent = "—";
+  stageBox.textContent = "idle";
+  fileUrlBox.textContent = "—";
+  publicIdBox.textContent = "—";
+}
+
+resetUploadUI();
+
+resetUploadBtn?.addEventListener("click", () => {
+  mediaFile.value = "";
+  resetUploadUI();
+});
+
+uploadBtn?.addEventListener("click", async () => {
+  const file = mediaFile.files?.[0];
+
+  if (!file) {
+    alert("Zəhmət olmasa video və ya audio fayl seç.");
+    return;
+  }
+
+  uploadStatusText.textContent = "Upload hazırlanır...";
+  uploadProgressBar.style.width = "5%";
+  uploadPercent.textContent = "5%";
 
   try {
-    await navigator.clipboard.writeText(text);
-    setStatus("Qısa xəbər copy edildi ✅");
-  } catch (e) {
-    console.error(e);
+    // 1) serverdən upload signature al
+    const signRes = await fetch("/api/upload-sign", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        resource_type: "video",
+      }),
+    });
+
+    const signData = await signRes.json();
+
+    if (!signRes.ok || !signData?.signature) {
+      console.error("SIGN ERROR:", signData);
+      alert(signData?.error || "Upload imzası yaradılmadı.");
+      resetUploadUI();
+      return;
+    }
+
+    // 2) Cloudinary-yə upload
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", signData.apiKey);
+    formData.append("timestamp", signData.timestamp);
+    formData.append("signature", signData.signature);
+    formData.append("folder", signData.folder || "video2news_uploads");
+    formData.append("resource_type", "video");
+
+    uploadStatusText.textContent = "Upload gedir...";
+
+    const cloudName = signData.cloudName;
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`);
+
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        uploadProgressBar.style.width = percent + "%";
+        uploadPercent.textContent = percent + "%";
+      }
+    };
+
+    xhr.onload = async function () {
+      try {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          console.error("CLOUDINARY RAW ERROR:", xhr.responseText);
+          alert("Cloudinary upload uğursuz oldu.");
+          resetUploadUI();
+          return;
+        }
+
+        const uploaded = JSON.parse(xhr.responseText || "{}");
+
+        if (!uploaded?.secure_url || !uploaded?.public_id) {
+          console.error("UPLOAD RESPONSE INVALID:", uploaded);
+          alert("Upload cavabı natamam gəldi.");
+          resetUploadUI();
+          return;
+        }
+
+        uploadStatusText.textContent = "Upload tamamlandı";
+        uploadProgressBar.style.width = "100%";
+        uploadPercent.textContent = "100%";
+        fileUrlBox.textContent = uploaded.secure_url;
+        publicIdBox.textContent = uploaded.public_id;
+        stageBox.textContent = "uploaded";
+
+        // 3) job yarat
+        const jobRes = await fetch("/api/create-job", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fileUrl: uploaded.secure_url,
+            publicId: uploaded.public_id,
+            originalName: file.name,
+            bytes: uploaded.bytes || file.size,
+            duration: uploaded.duration || null,
+            format: uploaded.format || null,
+            resourceType: "video",
+          }),
+        });
+
+        const jobData = await jobRes.json();
+
+        if (!jobRes.ok) {
+          console.error("JOB ERROR:", jobData);
+          alert(jobData?.error || "Job yaradılmadı.");
+          return;
+        }
+
+        jobIdBox.textContent = jobData.jobId || "—";
+        stageBox.textContent = jobData.stage || "queued";
+
+        // Əgər backend artıq transcript qaytarırsa, avtomatik textarea-ya yaz
+        if (jobData.transcript) {
+          transcriptInput.value = jobData.transcript;
+        }
+
+        // Əgər backend pack qaytarırsa, birbaşa göstər
+        if (jobData.pack) {
+          renderPack(jobData.pack);
+        }
+      } catch (err) {
+        console.error("UPLOAD PARSE/POST ERROR:", err);
+        alert("Upload zamanı emal xətası baş verdi.");
+      }
+    };
+
+    xhr.onerror = function () {
+      console.error("XHR NETWORK ERROR");
+      alert("Upload zamanı şəbəkə xətası.");
+      resetUploadUI();
+    };
+
+    xhr.send(formData);
+  } catch (err) {
+    console.error("GENERAL UPLOAD ERROR:", err);
+    alert("Upload zamanı şəbəkə xətası.");
+    resetUploadUI();
   }
 });
-
-renderHistory();
-setProgress(0);
-setJobInfo();
